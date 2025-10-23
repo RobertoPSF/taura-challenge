@@ -2,7 +2,7 @@ FROM golang:1.24-bullseye AS builder
 
 WORKDIR /src
 
-RUN go install -v github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest
+RUN go install -v github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest && nuclei -update-templates
 
 FROM python:3.10-bullseye
 
