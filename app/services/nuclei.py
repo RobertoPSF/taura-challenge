@@ -15,12 +15,13 @@ def _worker(scan_id, target, app):
         if not scan:
             logger.error("Scan id %s not found", scan_id)
             return
+        
+        Session = scoped_session(sessionmaker(bind=db.engine))
+        session = Session()
 
-        _update_status(scan, "scanning")
+        _update_status(scan, "scanning", session)
 
         try:
-            Session = scoped_session(sessionmaker(bind=db.engine))
-            session = Session()
 
             process = _start_nuclei_process(target)
 
