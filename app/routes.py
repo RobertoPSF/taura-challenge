@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from .services.nuclei import run_nuclei_scan, service_get_scan, service_get_findings
 from .services.katana import run_katana_pipeline
+from .services.analyze import service_analyze_scan
 
 bp = Blueprint("api", __name__)
 
@@ -40,3 +41,11 @@ def get_findings(scan_id):
         return jsonify({"error": "scan_id is required"}), 400
     
     return service_get_findings(scan_id), 200
+
+@bp.route("/api/scan/<scan_id>/analyze", methods=["POST"])
+def analyze_scan(scan_id):
+    
+    if not scan_id:
+        return jsonify({"error": "scan_id is required"}), 400
+    
+    return service_analyze_scan(scan_id), 200

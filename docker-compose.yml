@@ -4,6 +4,8 @@ services:
   api:
     build: .
     container_name: taura_backend_api
+    env_file:
+      - .env
     command: python run.py
     ports:
       - "5000:5000"
