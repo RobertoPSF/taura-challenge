@@ -3,52 +3,61 @@ import logging
 from datetime import datetime, timezone
 from flask import current_app, jsonify
 from ..models import db, Scan, Finding
-from ..utils.executor import _update_status, _finalize_scan, _consume_output, _start_nuclei_process, _log_stderr
+from ..utils.nuclei_executor import _update_status, _finalize_scan, _consume_output, _start_nuclei_process
+from ..utils.utils import _log_stderr
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 logger = logging.getLogger(__name__)
 
 
-def _worker(scan_id, target, app):
+def _worker(scan_id, target, app, Session):
     with app.app_context():
-        scan = Scan.query.get(scan_id)
-        if not scan:
-            logger.error("Scan id %s not found", scan_id)
-            return
-        
-        Session = scoped_session(sessionmaker(bind=db.engine))
         session = Session()
-
-        _update_status(scan, "scanning", session)
-
         try:
+            scan = session.get(Scan, scan_id)
+            if not scan:
+                logger.error("Scan id %s not found", scan_id)
+                return
+
+            _update_status(scan, "scanning", session)
 
             process = _start_nuclei_process(target)
 
-            threading.Thread(
-                target=_log_stderr, args=(process.stderr,), daemon=True
-            ).start()
+            threading.Thread(target=_log_stderr, args=(process.stderr,), daemon=True).start()
 
             _consume_output(process, scan_id, session)
 
             _finalize_scan(process, scan, session)
         except Exception as e:
             logger.exception("Error trying to execute scan %s: %s", scan_id, e)
-            _update_status(scan, "failed", session)
+            try:
+                scan = session.get(Scan, scan_id)
+                if scan:
+                    _update_status(scan, "failed", session)
+            except Exception:
+                logger.exception("Failed to set scan status to failed for %s", scan_id)
         finally:
-            scan.completed_at = datetime.now(timezone.utc)
-            db.session.commit()
-            db.session.remove()
+            try:
+                scan = session.get(Scan, scan_id)
+                if scan:
+                    scan.completed_at = datetime.now(timezone.utc)
+                    session.commit()
+            finally:
+                Session.remove()
 
 
 def run_nuclei_scan(target):
     app = current_app._get_current_object()
+    Session = scoped_session(sessionmaker(bind=db.engine))
+    session = Session()
 
     scan = Scan(target=target)
-    db.session.add(scan)
-    db.session.commit()
+    session.add(scan)
+    session.commit()
 
-    threading.Thread(target=_worker, args=(scan.id, target, app), daemon=True).start()
+    threading.Thread(target=_worker, args=(scan.id, target, app, Session), daemon=True).start()
+
+    Session.remove()
 
     return jsonify({
         "scan_id": scan.id,
@@ -66,13 +75,15 @@ def service_get_scan(scan_id):
     findings_count = Finding.query.filter_by(scan_id=scan_id).count()
 
     return jsonify({
-        "scan_id": scan.id,
-        "status": scan.status,
-        "target": scan.target,
-        "findings_count": findings_count,
-        "created_at": scan.created_at.isoformat().replace('+00:00', 'Z'),
-        "completed_at": scan.completed_at.isoformat().replace('+00:00', 'Z') if scan.completed_at else None
+    "scan_id": scan.id,
+    "status": scan.status,
+    "target": scan.target,
+    "findings_count": findings_count,
+    "urls_found": scan.urls_found,
+    "created_at": scan.created_at.isoformat().replace("+00:00", "Z"),
+    "completed_at": scan.completed_at.isoformat().replace("+00:00", "Z") if scan.completed_at else None
     })
+
 
 def service_get_findings(scan_id):
     findings = Finding.query.filter_by(scan_id=scan_id).all()
