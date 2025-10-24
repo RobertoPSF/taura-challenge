@@ -1,7 +1,7 @@
 import json
 import os
 from flask import jsonify
-from app.models import Scan, Finding
+from app.models import Scan, Finding, db
 import logging
 from openai import OpenAI
 
@@ -11,11 +11,11 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
 def service_analyze_scan(scan_id):
-    scan = Scan.query.get(scan_id)
+    scan = db.session.get(Scan, scan_id)
     if not scan:
-        return jsonify({"error": "Scan not found"}), 404
+        return jsonify({"error": "Scan not found"})
 
-    findings = [f.data for f in Finding.query.filter_by(scan_id=scan_id).all()]
+    findings = [f.data for f in db.session.query(Finding).filter_by(scan_id=scan_id).all()]
     analysis = analyze_findings_with_ai(findings)
 
     return jsonify({
