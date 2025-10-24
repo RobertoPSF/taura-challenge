@@ -1,12 +1,12 @@
 from . import db
 import uuid
-from datetime import datetime, timezone
 from sqlalchemy import func
 
 class Scan(db.Model):
     id = db.Column(db.String, primary_key=True, default=lambda: str(uuid.uuid4()))
     target = db.Column(db.String, nullable=False)
     status = db.Column(db.String, default="scanning")
+    urls_found = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=func.now())
     completed_at = db.Column(db.DateTime)
     
