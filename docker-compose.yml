@@ -22,6 +22,7 @@ services:
       command: pytest -v
       volumes:
         - .:/app
+      env_file:
+        - .env
       environment:
         - DATABASE_URL=sqlite:///data/test.db
-        - OPENAI_API_KEY=${OPENAI_API_KEY}

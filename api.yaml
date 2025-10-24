@@ -1,0 +1,210 @@
+openapi: 3.0.3
+info:
+  title: Taura Challenge API
+  version: 1.0.0
+  description: API para orquestrar scans (Katana, Nuclei) e analisar achados.
+
+servers:
+  - url: http://localhost:5000
+    description: Local development server
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: Service healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+
+  /api/scan:
+    post:
+      summary: Iniciar um scan (Nuclei) ou pipeline de crawling (Katana + Nuclei)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartScanRequest'
+            examples:
+              nuclei:
+                summary: Nuclei scan
+                value: { "target": "https://example.com" }
+              katana:
+                summary: Katana crawl + nuclei
+                value: { "domain": "example.com", "crawl": true }
+      responses:
+        '202':
+          description: Scan accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StartScanResponse'
+        '400':
+          description: Bad request (missing required field)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/scan/{scan_id}:
+    get:
+      summary: Recuperar status do scan
+      parameters:
+        - in: path
+          name: scan_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Scan details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScanDetails'
+        '404':
+          description: Scan not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/scan/{scan_id}/findings:
+    get:
+      summary: Recuperar findings do scan
+      parameters:
+        - in: path
+          name: scan_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista de findings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  scan_id:
+                    type: string
+                  total:
+                    type: integer
+                  findings:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Finding'
+
+  /api/scan/{scan_id}/analyze:
+    post:
+      summary: Analisar findings de um scan com AI
+      parameters:
+        - in: path
+          name: scan_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Resultado da análise
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyzeResponse'
+        '404':
+          description: Scan not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    Health:
+      type: object
+      properties:
+        status:
+          type: string
+          example: healthy
+
+    StartScanRequest:
+      type: object
+      properties:
+        target:
+          type: string
+          description: URL alvo para Nuclei
+        domain:
+          type: string
+          description: domínio para crawling com Katana
+        crawl:
+          type: boolean
+          description: indicar se deve executar crawling antes de Nuclei
+      additionalProperties: false
+
+    StartScanResponse:
+      type: object
+      properties:
+        scan_id:
+          type: string
+        status:
+          type: string
+        target:
+          type: string
+
+    ScanDetails:
+      type: object
+      properties:
+        scan_id:
+          type: string
+        status:
+          type: string
+        target:
+          type: string
+        findings_count:
+          type: integer
+        urls_found:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    Finding:
+      type: object
+      description: Arbitrary JSON produced by Nuclei for a finding
+      additionalProperties: true
+
+    AnalyzeResponse:
+      type: object
+      properties:
+        scan_id:
+          type: string
+        summary:
+          type: string
+        severity:
+          type: string
+          enum: [none, low, medium, high, critical, unknown]
+        recommendations:
+          type: string
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+
+  securitySchemes: {}
+
+tags:
+  - name: scans
+    description: Endpoints para orquestração de scans
+
+info:
+  x-generator: openapi-from-routes
