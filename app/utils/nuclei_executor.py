@@ -1,4 +1,3 @@
-from concurrent.futures import ThreadPoolExecutor, as_completed
 import logging
 import subprocess
 from ..models import Finding
@@ -49,7 +48,7 @@ def _consume_output(process, scan_id, session):
 
 def _start_nuclei_process(target):
     return subprocess.Popen(
-        ["nuclei", "-u", target, "-jsonl"],
+        ["nuclei", "-u", target, "-jsonl", "-t", "cves,misconfiguration"],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,

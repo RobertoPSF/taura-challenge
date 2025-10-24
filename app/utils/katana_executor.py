@@ -1,7 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import logging
 import subprocess
-import json
 import threading
 import re
 from .utils import _log_stderr, _parse_json_line_
@@ -33,10 +32,17 @@ def _consume_output_katana(process):
         return urls
 
     for line in process.stdout:
-        parsed = _parse_json_line_(line)
+        clean = _ANSI_RE.sub("", line).strip()
+        if not clean:
+            continue
+
+        parsed = _parse_json_line_(clean)
         if parsed and "url" in parsed:
-            url = parsed["url"]
-            urls.append(url)
+            urls.append(parsed["url"])
+            continue
+
+        if clean.startswith("http://") or clean.startswith("https://"):
+            urls.append(clean)
 
     return urls
 
