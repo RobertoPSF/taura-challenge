@@ -68,7 +68,7 @@ def run_nuclei_scan(target):
 
 def service_get_scan(scan_id):
 
-    scan = Scan.query.get(scan_id)
+    scan = db.session.get(Scan, scan_id)
 
     if not scan:
         return jsonify({"error": "Scan not found"}), 404
