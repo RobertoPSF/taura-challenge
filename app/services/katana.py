@@ -1,9 +1,10 @@
 import threading
 import logging
 from datetime import datetime, timezone
+from app.utils.utils import _log_stderr
 from flask import current_app, jsonify
 from ..models import db, Scan
-from ..utils.katana_executor import _run_katana, _run_nuclei_in_parallel
+from ..utils.katana_executor import _consume_output_katana, _run_katana, _run_nuclei_in_parallel
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +38,13 @@ def _worker(scan_id, domain, app, Session):
                 logger.error("Scan id %s not found", scan_id)
                 return
 
-            urls = _run_katana(domain)
+            process = _run_katana(domain)
+
+            threading.Thread(target=_log_stderr, args=(process.stderr,), daemon=True).start()
+            
+            urls = _consume_output_katana(process)
+
+            process.wait()
             urls_count = len(urls)
 
             scan.status = "scanning"

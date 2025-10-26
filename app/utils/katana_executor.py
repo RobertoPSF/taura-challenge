@@ -11,19 +11,13 @@ NUCLEI_MAX_THREADS = 5
 
 
 def _run_katana(domain):
-    process = subprocess.Popen(
+    return subprocess.Popen(
         ["katana", "-u", domain, "-silent", "-jc"],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
         bufsize=1,
     )
-    threading.Thread(target=_log_stderr, args=(process.stderr,), daemon=True).start()
-
-    urls = _consume_output_katana(process)
-
-    process.wait()
-    return urls
     
 
 def _consume_output_katana(process):
