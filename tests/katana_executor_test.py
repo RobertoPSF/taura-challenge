@@ -48,7 +48,6 @@ def test_log_katana_stderr_logs_error(caplog):
     caplog.set_level("ERROR")
     stderr = io.StringIO("\x1b[31merror occurred\n")
 
-    # katana_executor imports the shared _log_stderr from app.utils.utils
     executor._log_stderr(stderr)
 
     assert any("error occurred" in rec.message for rec in caplog.records)

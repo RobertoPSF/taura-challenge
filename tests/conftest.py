@@ -6,7 +6,7 @@ def test_app():
     app = create_app()
     app.config.update({
         "TESTING": True,
-        "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",  # Banco em memória
+        "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
     })
 
     with app.app_context():
