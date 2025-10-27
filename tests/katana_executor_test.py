@@ -26,7 +26,11 @@ def test_run_katana_collects_urls(mock_popen):
     mock_process = MagicMock(stdout=fake_output, stderr=io.StringIO())
     mock_popen.return_value = mock_process
 
-    urls = executor._run_katana("https://target.com")
+    proc = executor._run_katana("https://target.com")
+
+    assert proc is mock_process
+
+    urls = executor._consume_output_katana(proc)
 
     assert urls == ["https://a.com", "https://b.com"]
     mock_popen.assert_called_once()
@@ -66,7 +70,10 @@ def test_run_katana_no_stdout_returns_empty(mock_popen):
     mock_process = MagicMock(stdout=None, stderr=io.StringIO())
     mock_popen.return_value = mock_process
 
-    urls = executor._run_katana("http://no-stdout.test")
+    proc = executor._run_katana("http://no-stdout.test")
+    assert proc is mock_process
+
+    urls = executor._consume_output_katana(proc)
     assert urls == []
 
 
