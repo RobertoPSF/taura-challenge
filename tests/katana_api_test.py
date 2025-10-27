@@ -18,7 +18,7 @@ def test_start_katana_scan(mock_run_pipeline, client):
 
 
 @patch("app.routes.run_katana_pipeline")
-def test_start_katana_scan_missing_domain(mock_run_pipeline, client):
+def test_start_katana_scan_missing_domain(client):
     payload = {"crawl": True}
     res = client.post("/api/scan", json=payload)
     assert res.status_code == 400
@@ -26,7 +26,7 @@ def test_start_katana_scan_missing_domain(mock_run_pipeline, client):
 
 
 @patch("app.routes.run_katana_pipeline")
-def test_start_katana_scan_missing_crawling(mock_run_pipeline, client):
+def test_start_katana_scan_missing_crawling(client):
     payload = {"domain": "example.com"}
     res = client.post("/api/scan", json=payload)
     assert res.status_code == 400
