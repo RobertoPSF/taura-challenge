@@ -6,7 +6,7 @@ Este repositório contém a API do desafio Taura — um serviço que orquestra s
 
 - Docker & docker-compose
 - Variáveis de ambiente opcionais:
-  - `OPENAI_API_KEY` — chave da OpenAI, usada pelo serviço de análise (não obrigatório)
+  - `OPENAI_API_KEY` — chave da OpenAI, usada pelo serviço de análise (utilize .env)
 
 ## Como rodar (via Docker / Makefile) — recomendado
 
